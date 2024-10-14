@@ -10,49 +10,55 @@ COMMANDS = {
     "7. EXIT": ["7.", "7", "exit"]
     }
 
-class User:
-    def __init__ (self, money: int):
-        self.money = money
-        self.portfolio = {}
+class Stock:
+    def __init__ (self, symbol: str, price: float) -> None:
+        self.symbol = symbol
+        self.price = price
+        self.shares_owned = 0
+        self.invested_money = 0
+    
+    def __str__ (self) -> str:
+        return (f"{self.symbol} "
+                f"| Share Price: ${self.price:,.2f} "
+                f"| Shares: {self.shares_owned} "
+                f"| Cost per Share: ${self.cost_basis():,.2f} "
+                f"| Current Value: ${(self.current_value()):,.2f} "
+                f"| Profit: ${self.profit():,.2f}"
+        )
+    
+    def current_value(self) -> float:
+        return self.shares_owned * self.price
+    
+    def cost_basis(self) -> float:
+        return self.invested_money / self.shares_owned
 
-    def __str__ (self):
+    def profit(self) -> float:
+        return (self.price - self.cost_basis()) * self.shares_owned
+    
+class User:
+    def __init__ (self, money: int) -> None:
+        self.money = money
+        self.portfolio: dict = {}
+
+    def __str__ (self) -> str:
         output = "\n"
         for stock in self.portfolio:
             output += f"{stock}"
         output += f"\nYou have ${self.money:,.2f}"
         return output
     
-    def buy_stock(self, stock, shares: int):
-        if stock.price * shares < self.money:
+    def buy_stock(self, stock: Stock, shares: int) -> None:
+        if stock.price * shares <= self.money:
             self.money -= stock.price * shares
             stock.invested_money += stock.price * shares
             stock.shares_owned += shares
             self.portfolio[stock] = stock.symbol  
   
-    def sell_stock(self, stock, shares: int):
-        if stock.shares_owned > shares:
+    def sell_stock(self, stock: Stock, shares: int) -> None:
+        if stock.shares_owned >= shares:
             self.money += stock.price * shares
             stock.invested_money -= stock.price * shares
             stock.shares_owned -= shares
-
-class Stock:
-    def __init__ (self, symbol: str, price: float):
-        self.symbol = symbol
-        self.price = price
-        self.shares_owned = 0
-        self.invested_money = 0
-    
-    def __str__ (self):
-        return f"{self.symbol} | Share Price: ${self.price:,.2f} | Shares: {self.shares_owned} | Cost per Share: ${self.cost_basis():,.2f} |Current Value: ${(self.current_value()):,.2f} | Profit: ${self.profit():,.2f}"
-    
-    def current_value(self):
-        return self.shares_owned * self.price
-    
-    def cost_basis(self):
-        return self.invested_money / self.shares_owned
-
-    def profit(self):
-        return (self.price - self.cost_basis()) * self.shares_owned
 
 def main():
     user = User(new_game())
@@ -70,7 +76,8 @@ def main():
         elif command.lower() in COMMANDS["3. SELL STOCK"]:
             user.sell_stock(alpha, int(input("How many shares? ")))
         elif command.lower() in COMMANDS["6. NEW GAME"]:
-            user = User(new_game())
+            if input("Are you sure? ").lower().startswith("y"):
+                user = User(new_game())
         elif command.lower() in COMMANDS["7. EXIT"]:
             sys.exit()
         else:
@@ -88,6 +95,12 @@ def get_command() -> str:
     for command in COMMANDS:
         print(f"{command}")
     return input("Select Option: ")
+
+def load_game():
+    ...
+
+def save_game():
+    ...
     
 if __name__ == "__main__":
     main() 
