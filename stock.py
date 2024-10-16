@@ -1,4 +1,5 @@
 import sys
+import pickle
 
 COMMANDS = {
     "1. PORTFOLIO": ["1.", "1", "portfolio"],
@@ -41,9 +42,9 @@ class User:
         self.portfolio: dict = {}
 
     def __str__ (self) -> str:
-        output = "\n"
+        output = ""
         for stock in self.portfolio:
-            output += f"{stock}"
+            output += f"\n{stock}"
         output += f"\nYou have ${self.money:,.2f}"
         return output
     
@@ -72,9 +73,13 @@ def main():
         if command.lower() in COMMANDS["1. PORTFOLIO"]:
             print(user)
         elif command.lower() in COMMANDS["2. BUY STOCK"]:
-            user.buy_stock(alpha, int(input("How many shares? ")))
+            user.buy_stock(locals()[input("Symbol? ").lower()], int(input("How many shares? ")))
         elif command.lower() in COMMANDS["3. SELL STOCK"]:
-            user.sell_stock(alpha, int(input("How many shares? ")))
+            user.sell_stock(locals()[input("Symbol? ").lower()], int(input("How many shares? ")))
+        elif command.lower() in COMMANDS["4. SAVE GAME"]:
+            save_game(user)
+        elif command.lower() in COMMANDS["5. LOAD GAME"]:
+            user = load_game()
         elif command.lower() in COMMANDS["6. NEW GAME"]:
             if input("Are you sure? ").lower().startswith("y"):
                 user = User(new_game())
@@ -97,12 +102,14 @@ def get_command() -> str:
     return input("Select Option: ")
 
 def load_game() -> User:
-    with open("savegame.csv") as file:
-        for line in file:
-            print(line)
+    with open("savegame.pkl", "rb") as file:
+        user = pickle.load(file)
+        return user
 
-def save_game(user: User):
-    ...
-    
+def save_game(user: User) -> None:
+    with open("savegame.pkl", "wb") as file:
+        pickle.dump(user, file)
+        file.close()
+ 
 if __name__ == "__main__":
     main() 
