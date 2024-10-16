@@ -19,12 +19,12 @@ class Stock:
         self.invested_money = 0
     
     def __str__ (self) -> str:
-        return (f"{self.symbol} "
-                f"| Share Price: ${self.price:,.2f} "
-                f"| Shares: {self.shares_owned} "
-                f"| Cost per Share: ${self.cost_basis():,.2f} "
-                f"| Current Value: ${(self.current_value()):,.2f} "
-                f"| Profit: ${self.profit():,.2f}"
+        return (f"\033[1m{self.symbol:5}\033[0m "
+                f"| Share Price: ${self.price:8,.2f} "
+                f"| Shares: {self.shares_owned:5} "
+                f"| Cost per Share: ${self.cost_basis():8,.2f} "
+                f"| Current Value: ${(self.current_value()):10,.2f} "
+                f"| Profit: {self.profit()}"
         )
     
     def current_value(self) -> float:
@@ -33,8 +33,13 @@ class Stock:
     def cost_basis(self) -> float:
         return self.invested_money / self.shares_owned
 
-    def profit(self) -> float:
-        return (self.price - self.cost_basis()) * self.shares_owned
+    def profit(self) -> str:
+        profit = (self.price - self.cost_basis()) * self.shares_owned
+        if profit > 0:
+            return f"\033[0;32m${profit:10,.2f}\033[0m"
+        elif profit < 0:
+            return f"\033[0;31m${profit:10,.2f}\033[0m"
+        return f"${profit:10,.2f}"
     
 class User:
     def __init__ (self, money: int) -> None:
@@ -66,11 +71,13 @@ class User:
         self.portfolio[stock] = stock.symbol
 
 def main():
-    user = User(new_game())
+    user = start_up()
 
     #TEMP STOCK FOR TESTING
     user.seed_stock(Stock("ALPHA", float(10)))
     user.seed_stock(Stock("BETA", float(5)))
+
+    print(user)
 
     while True:
         command = get_command()
@@ -81,27 +88,33 @@ def main():
             for stock in user.portfolio:
                 if symbol == stock.symbol:
                     user.buy_stock(stock, int(input("How many shares? ")))
+                    break
         elif command.lower() in COMMANDS["3. SELL STOCK"]:
             symbol = input("Symbol? ")
             for stock in user.portfolio:
                 if symbol == stock.symbol:
                     user.sell_stock(stock, int(input("How many shares? ")))
+                    break
         elif command.lower() in COMMANDS["4. SAVE GAME"]:
             save_game(user)
         elif command.lower() in COMMANDS["5. LOAD GAME"]:
             user = load_game()
-            for stock in user.portfolio:
-                s = stock.price
-                print(stock)
-
         elif command.lower() in COMMANDS["6. NEW GAME"]:
             if input("Are you sure? ").lower().startswith("y"):
                 user = User(new_game())
         elif command.lower() in COMMANDS["7. EXIT"]:
-            sys.exit()  
+            sys.exit()
+        else:
+            for stock in user.portfolio:
+                stock.price += 1
+         
 
 def start_up() -> User:
-    return User(new_game())
+    if input("NEW game or LOAD game?") == "LOAD":
+        return load_game()
+    else:
+        return User(new_game())
+    
 
 def new_game() -> int:
     while True:
