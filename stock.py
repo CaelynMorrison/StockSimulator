@@ -1,5 +1,7 @@
 import sys
 import pickle
+from alpaca.data import StockHistoricalDataClient
+from alpaca.data.requests import StockLatestTradeRequest
 
 COMMANDS = {
     "1. PORTFOLIO": ["1.", "1", "portfolio"],
@@ -16,7 +18,7 @@ class Stock:
         self.symbol = symbol
         self.price = price
         self.shares_owned = 0
-        self.invested_money = 0
+        self.invested_money = float(0)
     
     def __str__ (self) -> str:
         return (f"\033[1m{self.symbol:5}\033[0m "
@@ -43,7 +45,7 @@ class Stock:
     
 class User:
     def __init__ (self, money: int) -> None:
-        self.money = money
+        self.money = float(money)
         self.portfolio: dict = {}
 
     def __str__ (self) -> str:
@@ -71,12 +73,14 @@ class User:
         self.portfolio[stock] = stock.symbol
 
 def main():
+    api_key = load_key() 
     user = start_up()
 
     #TEMP STOCK FOR TESTING
     user.seed_stock(Stock("ALPHA", float(10)))
     user.seed_stock(Stock("BETA", float(5)))
-
+#    user.seed_stock(Stock(test_stock, test[test_stock].price))
+    
     print(user)
 
     while True:
@@ -105,16 +109,20 @@ def main():
         elif command.lower() in COMMANDS["7. EXIT"]:
             sys.exit()
         else:
-            for stock in user.portfolio:
-                stock.price += 1
-         
+            symbol = input("Stock Symbol? ")
+            test = get_stock_price(api_key, symbol)
+            user.seed_stock(Stock(symbol, test))
+
+def load_key() -> list:
+    with open("config.ini", "r") as file:
+        for line in file:
+            return line.strip().split(",")
 
 def start_up() -> User:
     if input("NEW game or LOAD game?") == "LOAD":
         return load_game()
     else:
-        return User(new_game())
-    
+        return User(new_game())  
 
 def new_game() -> int:
     while True:
@@ -128,6 +136,12 @@ def get_command() -> str:
     for command in COMMANDS:
         print(f"{command}")
     return input("Select Option: ")
+
+def get_stock_price(api_key: list, symbol: str) -> float:
+    stock_client = StockHistoricalDataClient(api_key[0], api_key[1])
+    stock_data = stock_client.get_stock_latest_trade(StockLatestTradeRequest(symbol_or_symbols = [symbol]))
+    if stock_data:
+        return stock_data[symbol].price
 
 def load_game() -> User:
     with open("savegame.pkl", "rb") as file:
