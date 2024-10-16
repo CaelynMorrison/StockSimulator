@@ -57,7 +57,7 @@ class User:
     def sell_stock(self, stock: Stock, shares: int) -> None:
         if stock.shares_owned >= shares:
             self.money += stock.price * shares
-            stock.invested_money -= stock.price * shares
+            stock.invested_money -= stock.cost_basis() * shares
             stock.shares_owned -= shares
 
 def main():
@@ -96,10 +96,12 @@ def get_command() -> str:
         print(f"{command}")
     return input("Select Option: ")
 
-def load_game():
-    ...
+def load_game() -> User:
+    with open("savegame.csv") as file:
+        for line in file:
+            print(line)
 
-def save_game():
+def save_game(user: User):
     ...
     
 if __name__ == "__main__":
