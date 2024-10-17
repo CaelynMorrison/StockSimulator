@@ -51,8 +51,8 @@ class User:
     def __str__ (self) -> str:
         output = ""
         for stock in self.portfolio:
-            if stock.shares_owned > 0:
-                output += f"\n{stock}"
+            if self.portfolio[stock].shares_owned > 0:
+                output += f"\n{self.portfolio[stock]}"
         output += f"\nYou have ${self.money:,.2f}"
         return output
     
@@ -61,7 +61,7 @@ class User:
             self.money -= stock.price * shares
             stock.invested_money += stock.price * shares
             stock.shares_owned += shares
-            self.portfolio[stock] = stock.symbol
+            self.portfolio[stock.symbol] = stock
   
     def sell_stock(self, stock: Stock, shares: int) -> None:
         if stock.shares_owned >= shares:
@@ -70,18 +70,14 @@ class User:
             stock.shares_owned -= shares
 
     def seed_stock(self, stock: Stock) -> None:
-        self.portfolio[stock] = stock.symbol
+        self.portfolio[stock.symbol] = stock
 
 def main():
     api_key = load_key() 
     user = start_up()
 
-    #TEMP STOCK FOR TESTING
-    user.seed_stock(Stock("ALPHA", float(10)))
-    user.seed_stock(Stock("BETA", float(5)))
-#    user.seed_stock(Stock(test_stock, test[test_stock].price))
-    
     print(user)
+    user.seed_stock(Stock("A", float(10)))
 
     while True:
         command = get_command()
@@ -89,16 +85,12 @@ def main():
             print(user)
         elif command.lower() in COMMANDS["2. BUY STOCK"]:
             symbol = input("Symbol? ")
-            for stock in user.portfolio:
-                if symbol == stock.symbol:
-                    user.buy_stock(stock, int(input("How many shares? ")))
-                    break
+            if symbol in user.portfolio:
+                user.buy_stock(user.portfolio[symbol], int(input("How many shares? ")))
         elif command.lower() in COMMANDS["3. SELL STOCK"]:
             symbol = input("Symbol? ")
-            for stock in user.portfolio:
-                if symbol == stock.symbol:
-                    user.sell_stock(stock, int(input("How many shares? ")))
-                    break
+            if symbol in user.portfolio:
+                user.sell_stock(user.portfolio[symbol], int(input("How many shares? ")))
         elif command.lower() in COMMANDS["4. SAVE GAME"]:
             save_game(user)
         elif command.lower() in COMMANDS["5. LOAD GAME"]:
@@ -109,9 +101,8 @@ def main():
         elif command.lower() in COMMANDS["7. EXIT"]:
             sys.exit()
         else:
-            symbol = input("Stock Symbol? ")
-            test = get_stock_price(api_key, symbol)
-            user.seed_stock(Stock(symbol, test))
+            print(update_stock_price(input("Stock Symbol? "), user, api_key))
+
 
 def load_key() -> list:
     with open("config.ini", "r") as file:
@@ -142,6 +133,13 @@ def get_stock_price(api_key: list, symbol: str) -> float:
     stock_data = stock_client.get_stock_latest_trade(StockLatestTradeRequest(symbol_or_symbols = [symbol]))
     if stock_data:
         return stock_data[symbol].price
+    
+def update_stock_price(symbol: str, user: User, api_key: list) -> None:
+    if symbol in user.portfolio:
+        user.portfolio[symbol].price = get_stock_price(api_key, symbol)
+        return         
+    test = get_stock_price(api_key, symbol)
+    user.seed_stock(Stock(symbol, test))
 
 def load_game() -> User:
     with open("savegame.pkl", "rb") as file:
