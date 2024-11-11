@@ -77,19 +77,22 @@ def main():
     user = start_up()
 
     print(user)
-    user.seed_stock(Stock("A", float(10)))
 
     while True:
         command = get_command()
         if command.lower() in COMMANDS["1. PORTFOLIO"]:
+            for stock in user.portfolio:
+                if user.portfolio[stock].shares_owned > 0:
+                    update_stock_price(user.portfolio[stock].symbol, user, api_key)
             print(user)
         elif command.lower() in COMMANDS["2. BUY STOCK"]:
             symbol = input("Symbol? ")
-            if symbol in user.portfolio:
-                user.buy_stock(user.portfolio[symbol], int(input("How many shares? ")))
+            update_stock_price(symbol, user, api_key)
+            user.buy_stock(user.portfolio[symbol], int(input("How many shares? ")))
         elif command.lower() in COMMANDS["3. SELL STOCK"]:
             symbol = input("Symbol? ")
             if symbol in user.portfolio:
+                update_stock_price(symbol, user, api_key)
                 user.sell_stock(user.portfolio[symbol], int(input("How many shares? ")))
         elif command.lower() in COMMANDS["4. SAVE GAME"]:
             save_game(user)
@@ -100,9 +103,6 @@ def main():
                 user = User(new_game())
         elif command.lower() in COMMANDS["7. EXIT"]:
             sys.exit()
-        else:
-            print(update_stock_price(input("Stock Symbol? "), user, api_key))
-
 
 def load_key() -> list:
     with open("config.ini", "r") as file:
@@ -138,8 +138,7 @@ def update_stock_price(symbol: str, user: User, api_key: list) -> None:
     if symbol in user.portfolio:
         user.portfolio[symbol].price = get_stock_price(api_key, symbol)
         return         
-    test = get_stock_price(api_key, symbol)
-    user.seed_stock(Stock(symbol, test))
+    user.seed_stock(Stock(symbol, get_stock_price(api_key, symbol)))
 
 def load_game() -> User:
     with open("savegame.pkl", "rb") as file:
