@@ -76,15 +76,12 @@ def main():
     api_key = load_key() 
     user = start_up()
 
-    print(user)
+    display_portfolio(user, api_key)
 
     while True:
         command = get_command()
         if command.lower() in COMMANDS["1. PORTFOLIO"]:
-            for stock in user.portfolio:
-                if user.portfolio[stock].shares_owned > 0:
-                    update_stock_price(user.portfolio[stock].symbol, user, api_key)
-            print(user)
+            display_portfolio(user, api_key)
         elif command.lower() in COMMANDS["2. BUY STOCK"]:
             symbol = input("Symbol? ")
             update_stock_price(symbol, user, api_key)
@@ -127,6 +124,12 @@ def get_command() -> str:
     for command in COMMANDS:
         print(f"{command}")
     return input("Select Option: ")
+
+def display_portfolio(user: User, api_key: list) -> None:  
+    for stock in user.portfolio:
+        if user.portfolio[stock].shares_owned > 0:
+            update_stock_price(user.portfolio[stock].symbol, user, api_key)
+    print(user)
 
 def get_stock_price(api_key: list, symbol: str) -> float:
     stock_client = StockHistoricalDataClient(api_key[0], api_key[1])
