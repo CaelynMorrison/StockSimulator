@@ -83,26 +83,26 @@ def main():
     display_portfolio(user, api_key)
 
     while True:
-        command = get_command()
-        if command.lower() in COMMANDS["1. PORTFOLIO"]:
+        command = get_command().lower()
+        if command in COMMANDS["1. PORTFOLIO"]:
             display_portfolio(user, api_key)
-        elif command.lower() in COMMANDS["2. BUY STOCK"]:
+        elif command in COMMANDS["2. BUY STOCK"]:
             symbol = input("Symbol? ")
             update_stock_price(symbol, user, api_key)
             user.buy_stock(user.portfolio[symbol], int(input("How many shares? ")))
-        elif command.lower() in COMMANDS["3. SELL STOCK"]:
+        elif command in COMMANDS["3. SELL STOCK"]:
             symbol = input("Symbol? ")
             if symbol in user.portfolio:
                 update_stock_price(symbol, user, api_key)
                 user.sell_stock(user.portfolio[symbol], int(input("How many shares? ")))
-        elif command.lower() in COMMANDS["4. SAVE GAME"]:
+        elif command in COMMANDS["4. SAVE GAME"]:
             save_game(user)
-        elif command.lower() in COMMANDS["5. LOAD GAME"]:
+        elif command in COMMANDS["5. LOAD GAME"]:
             user = load_game()
-        elif command.lower() in COMMANDS["6. NEW GAME"]:
+        elif command in COMMANDS["6. NEW GAME"]:
             if input("Are you sure? ").lower().startswith("y"):
                 user = User(new_game())
-        elif command.lower() in COMMANDS["7. EXIT"]:
+        elif command in COMMANDS["7. EXIT"]:
             sys.exit()
 
 def load_key() -> list:
@@ -111,10 +111,12 @@ def load_key() -> list:
             return line.strip().split(",")
 
 def start_up() -> User:
-    if input("NEW game or LOAD game?") == "LOAD":
-        return load_game()
-    else:
-        return User(new_game())  
+    while True:
+        text_input = input("NEW game or LOAD game?").lower()
+        if text_input.startswith("l"):
+            return load_game()
+        elif text_input.startswith("n"):
+            return User(new_game())  
 
 def new_game() -> int:
     while True:
