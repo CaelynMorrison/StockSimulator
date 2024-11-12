@@ -1,4 +1,5 @@
 import sys
+import time
 import pickle
 from alpaca.data import StockHistoricalDataClient
 from alpaca.data.requests import StockLatestTradeRequest
@@ -13,12 +14,15 @@ COMMANDS = {
     "7. EXIT": ["7.", "7", "exit"]
     }
 
+STOCK_REFRESH_LIMIT = 300
+
 class Stock:
     def __init__ (self, symbol: str, price: float) -> None:
         self.symbol = symbol
         self.price = price
         self.shares_owned = 0
         self.invested_money = float(0)
+        self.last_updated = time.time()
     
     def __str__ (self) -> str:
         return (f"\033[1m{self.symbol:5}\033[0m "
@@ -139,7 +143,9 @@ def get_stock_price(api_key: list, symbol: str) -> float:
     
 def update_stock_price(symbol: str, user: User, api_key: list) -> None:
     if symbol in user.portfolio:
-        user.portfolio[symbol].price = get_stock_price(api_key, symbol)
+        if time.time() > user.portfolio[symbol].last_updated + STOCK_REFRESH_LIMIT:
+            user.portfolio[symbol].price = get_stock_price(api_key, symbol)
+            user.portfolio[symbol].last_updated = time.time()
         return         
     user.seed_stock(Stock(symbol, get_stock_price(api_key, symbol)))
 
