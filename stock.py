@@ -57,7 +57,7 @@ class User:
         for stock in self.portfolio:
             if self.portfolio[stock].shares_owned > 0:
                 output += f"\n{self.portfolio[stock]}"
-        output += f"\nYou have ${self.money:,.2f}"
+        output += f"\nYou have \033[1m${self.money:,.2f}\033[0m"
         return output
     
     def buy_stock(self, stock: Stock, shares: int) -> None:
