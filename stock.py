@@ -119,10 +119,22 @@ def load_key() -> list:
 def get_new_key() -> list:
     key_id = input("Enter API Key ID: ")
     secret_key = input("Enter API Secret Key: ")
-    with open("config.ini", "w") as file:
-        file.write(f"{key_id},{secret_key}")
-        file.close()
-    return [key_id, secret_key]
+    if validate_key([key_id, secret_key]):
+        with open("config.ini", "w") as file:
+            file.write(f"{key_id},{secret_key}")
+            file.close()
+        return [key_id, secret_key]
+    else:
+        print("API key is invalid.")
+        return get_new_key()
+
+def validate_key(api_key: list) -> bool:
+    try:
+        get_stock_price(api_key, "AAPL")
+        return True
+    except:
+        return False
+
 
 def start_up() -> User:
     while True:
