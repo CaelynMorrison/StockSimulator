@@ -6,10 +6,10 @@ from alpaca.data.requests import StockLatestTradeRequest
 
 COMMANDS = {
     "1. PORTFOLIO": ["1.", "1", "portfolio"],
-    "2. BUY STOCK": ["2.", "2"],
-    "3. SELL STOCK": ["3.", "3"],
-    "4. SAVE GAME": ["4.", "4"],
-    "5. LOAD GAME": ["5.", "5"],
+    "2. BUY STOCK": ["2.", "2", "buy", "buy stock" "buystock"],
+    "3. SELL STOCK": ["3.", "3", "sell", "sell stock", "sellstock"],
+    "4. SAVE GAME": ["4.", "4", "save", "save game", "savegame"],
+    "5. LOAD GAME": ["5.", "5", "load", "load game", "loadgame"],
     "6. NEW GAME": ["6.", "6", "newgame", "new game"],
     "7. EXIT": ["7.", "7", "exit"]
     }
