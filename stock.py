@@ -87,9 +87,12 @@ def main():
         if command in COMMANDS["1. PORTFOLIO"]:
             display_portfolio(user, api_key)
         elif command in COMMANDS["2. BUY STOCK"]:
-            symbol = input("Symbol? ")
-            update_stock_price(symbol, user, api_key)
-            user.buy_stock(user.portfolio[symbol], int(input("How many shares? ")))
+            try:
+                symbol = input("Symbol? ")
+                update_stock_price(symbol, user, api_key)
+                user.buy_stock(user.portfolio[symbol], int(input("How many shares? ")))
+            except TypeError: 
+                print(f"{symbol} is not a valid stock symbol.")
         elif command in COMMANDS["3. SELL STOCK"]:
             symbol = input("Symbol? ")
             if symbol in user.portfolio:
@@ -106,9 +109,20 @@ def main():
             sys.exit()
 
 def load_key() -> list:
-    with open("config.ini", "r") as file:
-        for line in file:
-            return line.strip().split(",")
+    try:
+        with open("config.ini", "r") as file:
+            return file.read().strip().split(",")
+    except FileNotFoundError:
+        print("Alpaca API key is required.")
+        return get_new_key()
+
+def get_new_key() -> list:
+    key_id = input("Enter API Key ID: ")
+    secret_key = input("Enter API Secret Key: ")
+    with open("config.ini", "w") as file:
+        file.write(f"{key_id},{secret_key}")
+        file.close()
+    return [key_id, secret_key]
 
 def start_up() -> User:
     while True:
