@@ -1,18 +1,9 @@
 import sys
 import time
 import pickle
+from textmenu import TextMenu
 from alpaca.data import StockHistoricalDataClient
 from alpaca.data.requests import StockLatestTradeRequest
-
-COMMANDS = {
-    "1. PORTFOLIO": ["1.", "1", "portfolio"],
-    "2. BUY STOCK": ["2.", "2", "buy", "buy stock" "buystock"],
-    "3. SELL STOCK": ["3.", "3", "sell", "sell stock", "sellstock"],
-    "4. SAVE GAME": ["4.", "4", "save", "save game", "savegame"],
-    "5. LOAD GAME": ["5.", "5", "load", "load game", "loadgame"],
-    "6. NEW GAME": ["6.", "6", "newgame", "new game"],
-    "7. EXIT": ["7.", "7", "exit"]
-    }
 
 STOCK_REFRESH_LIMIT = 300
 
@@ -79,34 +70,44 @@ class User:
 def main():
     api_key = load_key() 
     user = start_up()
+    main_menu = create_main_menu(user, api_key)
 
     display_portfolio(user, api_key)
 
     while True:
-        command = get_command().lower()
-        if command in COMMANDS["1. PORTFOLIO"]:
-            display_portfolio(user, api_key)
-        elif command in COMMANDS["2. BUY STOCK"]:
-            try:
-                symbol = input("Symbol? ")
-                update_stock_price(symbol, user, api_key)
-                user.buy_stock(user.portfolio[symbol], int(input("How many shares? ")))
-            except TypeError: 
-                print(f"{symbol} is not a valid stock symbol.")
-        elif command in COMMANDS["3. SELL STOCK"]:
-            symbol = input("Symbol? ")
-            if symbol in user.portfolio:
-                update_stock_price(symbol, user, api_key)
-                user.sell_stock(user.portfolio[symbol], int(input("How many shares? ")))
-        elif command in COMMANDS["4. SAVE GAME"]:
-            save_game(user)
-        elif command in COMMANDS["5. LOAD GAME"]:
-            user = load_game()
-        elif command in COMMANDS["6. NEW GAME"]:
-            if input("Are you sure? ").lower().startswith("y"):
-                user = User(new_game())
-        elif command in COMMANDS["7. EXIT"]:
-            sys.exit()
+        main_menu.get_user_input()
+
+def create_main_menu(user: User, api_key: list) -> TextMenu:
+    main_menu = TextMenu()
+
+    main_menu.add_menu_item("PORTFOLIO", display_portfolio, user, api_key)
+
+    main_menu.add_menu_item("BUY STOCK", get_stock_to_buy)
+    main_menu.menu_items["BUY STOCK"].add_alias("buy", "buystock")
+
+    main_menu.add_menu_item("SELL STOCK", get_stock_to_sell)
+    main_menu.menu_items["SELL STOCK"].add_alias("sell", "sellstock")
+
+    main_menu.add_menu_item("SAVE GAME", save_game, user)
+    main_menu.menu_items["SAVE GAME"].add_alias("save", "savegame")
+
+    main_menu.add_menu_item("LOAD GAME", load_game)
+    main_menu.menu_items["LOAD GAME"].add_alias("load", "loadgame")
+
+    main_menu.add_menu_item("NEW GAME", new_game)
+    main_menu.menu_items["NEW GAME"].add_alias("new", "newgame")
+
+    main_menu.add_menu_item("EXIT", sys.exit)
+    
+    return main_menu
+
+
+def get_stock_to_buy():
+    print("success")
+    pass
+
+def get_stock_to_sell():
+    pass
 
 def load_key() -> list:
     try:
