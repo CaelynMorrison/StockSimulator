@@ -52,6 +52,37 @@ class User:
         output += f"\nYou have \033[1m${self.money:,.2f}\033[0m"
         return output
     
+    def display_portfolio(self, api_key: list) -> None:  
+        for stock in self.portfolio:
+            if self.portfolio[stock].shares_owned > 0:
+                self.get_stock_data(api_key, stock)
+        print(self)
+
+    def trade_stock(self, api_key: list, action) -> None:
+        attempts = 0
+        stock_data = {}
+        while attempts < 3:
+            symbol = input("Symbol?")
+            try:
+                stock_data[symbol] = self.get_stock_data(api_key, symbol)
+            except KeyError:
+                print(f"{symbol} is not a valid stock symbol.")
+                attempts += 1
+                continue
+            action(self.portfolio[symbol], get_quantity())      
+            break
+
+    def get_stock_data(self, api_key: list, symbol: str) -> dict:
+        stock_client = StockHistoricalDataClient(api_key[0], api_key[1])
+        if symbol in self.portfolio:
+            if time.time() < (self.portfolio[symbol].last_updated
+                              + STOCK_REFRESH_LIMIT):
+                return self.portfolio[symbol]       
+        stock_data = stock_client.get_stock_latest_trade(
+                    StockLatestTradeRequest(symbol_or_symbols = [symbol]))       
+        self.update_stock_price(symbol, stock_data[symbol])       
+        return stock_data[symbol]
+    
     def buy_stock(self, stock: Stock, shares: int) -> None:
         if stock.price * shares <= self.money:
             self.money -= stock.price * shares
@@ -68,18 +99,20 @@ class User:
     def update_stock_price(self, symbol: str, stock_data: dict) -> None:
         if symbol in self.portfolio:
             self.portfolio[symbol].price = stock_data.price
+            self.portfolio[symbol].last_updated = time.time()
         else:
             self.seed_stock(Stock(symbol, stock_data.price))
 
     def seed_stock(self, stock: Stock) -> None:
         self.portfolio[stock.symbol] = stock
+        self.portfolio[stock.symbol].last_updated = time.time()
 
 def main():
-    api_key = load_key() 
     user = start_up()
+    api_key = load_key()
     main_menu = create_main_menu(user, api_key)
 
-    display_portfolio(user, api_key)
+    user.display_portfolio(api_key)
 
     while True:
         main_menu.get_user_input()
@@ -87,13 +120,13 @@ def main():
 def create_main_menu(user: User, api_key: list) -> TextMenu:
     main_menu = TextMenu()
 
-    main_menu.add_menu_item("PORTFOLIO", display_portfolio, user, api_key)
+    main_menu.add_menu_item("PORTFOLIO", user.display_portfolio, api_key)
 
-    main_menu.add_menu_item("BUY STOCK", trade_stock, user,
+    main_menu.add_menu_item("BUY STOCK", user.trade_stock,
                             api_key, user.buy_stock)
     main_menu.menu_items["BUY STOCK"].add_alias("buy", "buystock")
 
-    main_menu.add_menu_item("SELL STOCK", trade_stock, user,
+    main_menu.add_menu_item("SELL STOCK", user.trade_stock, user,
                             api_key, user.sell_stock)
     main_menu.menu_items["SELL STOCK"].add_alias("sell", "sellstock")
 
@@ -109,21 +142,6 @@ def create_main_menu(user: User, api_key: list) -> TextMenu:
     main_menu.add_menu_item("EXIT", sys.exit)
     
     return main_menu
-
-def trade_stock(user: User, api_key: list, action) -> None:
-    attempts = 0
-    stock_data = {}
-    while attempts < 3:
-        symbol = input("Symbol?")
-        try:
-            stock_data[symbol] = get_stock_data(user, api_key, symbol)
-        except KeyError:
-            print(f"{symbol} is not a valid stock symbol.")
-            attempts += 1
-            continue
-        action(user.portfolio[symbol], get_quantity())      
-        break
-
 
 def get_quantity() -> int:
     while True:
@@ -152,9 +170,9 @@ def get_new_key() -> list:
         print("API key is invalid.")
         return get_new_key()
 
-def validate_key(api_key: list) -> bool:
+def validate_key(user: User, api_key: list) -> bool:
     try:
-        get_stock_price(api_key, "AAPL")
+        user.get_stock_data(api_key, "AAPL")
         return True
     except:
         return False
@@ -174,30 +192,6 @@ def new_game() -> int:
         except ValueError:
             pass
      
-def display_portfolio(user: User, api_key: list) -> None:  
-    for stock in user.portfolio:
-        if user.portfolio[stock].shares_owned > 0:
-            update_stock_price(user.portfolio[stock].symbol, user, api_key)
-    print(user)
-
-def get_stock_data(user: User, api_key: list, symbol: str) -> dict:
-    stock_client = StockHistoricalDataClient(api_key[0], api_key[1])
-    if symbol in user.portfolio:
-        if time.time() < user.portfolio[symbol].last_updated + STOCK_REFRESH_LIMIT:
-            return user.portfolio[symbol]
-    stock_data = stock_client.get_stock_latest_trade(
-                StockLatestTradeRequest(symbol_or_symbols = [symbol]))
-    user.update_stock_price(symbol, stock_data[symbol])       
-    return stock_data[symbol]
-  
-def update_stock_price(symbol: str, user: User, api_key: list) -> None:
-    if symbol in user.portfolio:
-        if time.time() > user.portfolio[symbol].last_updated + STOCK_REFRESH_LIMIT:
-            user.portfolio[symbol].price = get_stock_price(api_key, symbol)
-            user.portfolio[symbol].last_updated = time.time()
-        return         
-    user.seed_stock(Stock(symbol, get_stock_price(api_key, symbol)))
-
 def load_game() -> User:
     with open("savegame.pkl", "rb") as file:
         user = pickle.load(file)
