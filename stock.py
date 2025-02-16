@@ -5,6 +5,7 @@ from textmenu import TextMenu
 from alpaca.data import StockHistoricalDataClient
 from alpaca.data.requests import StockLatestTradeRequest
 
+# Minimum time in milliseconds since last time specific stock data was requested. 
 STOCK_REFRESH_LIMIT = 300
 
 class Stock:
@@ -64,6 +65,12 @@ class User:
             stock.invested_money -= stock.cost_basis() * shares
             stock.shares_owned -= shares
 
+    def update_stock_price(self, symbol: str, stock_data: dict) -> None:
+        if symbol in self.portfolio:
+            self.portfolio[symbol].price = stock_data.price
+        else:
+            self.seed_stock(Stock(symbol, stock_data.price))
+
     def seed_stock(self, stock: Stock) -> None:
         self.portfolio[stock.symbol] = stock
 
@@ -82,10 +89,12 @@ def create_main_menu(user: User, api_key: list) -> TextMenu:
 
     main_menu.add_menu_item("PORTFOLIO", display_portfolio, user, api_key)
 
-    main_menu.add_menu_item("BUY STOCK", get_stock_to_buy)
+    main_menu.add_menu_item("BUY STOCK", trade_stock, user,
+                            api_key, user.buy_stock)
     main_menu.menu_items["BUY STOCK"].add_alias("buy", "buystock")
 
-    main_menu.add_menu_item("SELL STOCK", get_stock_to_sell)
+    main_menu.add_menu_item("SELL STOCK", trade_stock, user,
+                            api_key, user.sell_stock)
     main_menu.menu_items["SELL STOCK"].add_alias("sell", "sellstock")
 
     main_menu.add_menu_item("SAVE GAME", save_game, user)
@@ -101,13 +110,27 @@ def create_main_menu(user: User, api_key: list) -> TextMenu:
     
     return main_menu
 
+def trade_stock(user: User, api_key: list, action) -> None:
+    attempts = 0
+    stock_data = {}
+    while attempts < 3:
+        symbol = input("Symbol?")
+        try:
+            stock_data[symbol] = get_stock_data(user, api_key, symbol)
+        except KeyError:
+            print(f"{symbol} is not a valid stock symbol.")
+            attempts += 1
+            continue
+        action(user.portfolio[symbol], get_quantity())      
+        break
 
-def get_stock_to_buy():
-    print("success")
-    pass
 
-def get_stock_to_sell():
-    pass
+def get_quantity() -> int:
+    while True:
+        try: 
+            return int(input("How many shares? "))
+        except TypeError:
+            print("Please enter a whole number of shares.")
 
 def load_key() -> list:
     try:
@@ -136,7 +159,6 @@ def validate_key(api_key: list) -> bool:
     except:
         return False
 
-
 def start_up() -> User:
     while True:
         text_input = input("NEW game or LOAD game?").lower()
@@ -152,24 +174,22 @@ def new_game() -> int:
         except ValueError:
             pass
      
-def get_command() -> str:
-    print() 
-    for command in COMMANDS:
-        print(f"{command}")
-    return input("Select Option: ")
-
 def display_portfolio(user: User, api_key: list) -> None:  
     for stock in user.portfolio:
         if user.portfolio[stock].shares_owned > 0:
             update_stock_price(user.portfolio[stock].symbol, user, api_key)
     print(user)
 
-def get_stock_price(api_key: list, symbol: str) -> float:
+def get_stock_data(user: User, api_key: list, symbol: str) -> dict:
     stock_client = StockHistoricalDataClient(api_key[0], api_key[1])
-    stock_data = stock_client.get_stock_latest_trade(StockLatestTradeRequest(symbol_or_symbols = [symbol]))
-    if stock_data:
-        return stock_data[symbol].price
-    
+    if symbol in user.portfolio:
+        if time.time() < user.portfolio[symbol].last_updated + STOCK_REFRESH_LIMIT:
+            return user.portfolio[symbol]
+    stock_data = stock_client.get_stock_latest_trade(
+                StockLatestTradeRequest(symbol_or_symbols = [symbol]))
+    user.update_stock_price(symbol, stock_data[symbol])       
+    return stock_data[symbol]
+  
 def update_stock_price(symbol: str, user: User, api_key: list) -> None:
     if symbol in user.portfolio:
         if time.time() > user.portfolio[symbol].last_updated + STOCK_REFRESH_LIMIT:
